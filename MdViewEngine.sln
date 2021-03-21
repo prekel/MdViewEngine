@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MdViewEngine", "MdViewEngine\MdViewEngine.fsproj", "{FB76FCC8-6ACD-4A57-B431-F76DAD19D0F8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FB76FCC8-6ACD-4A57-B431-F76DAD19D0F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB76FCC8-6ACD-4A57-B431-F76DAD19D0F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB76FCC8-6ACD-4A57-B431-F76DAD19D0F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB76FCC8-6ACD-4A57-B431-F76DAD19D0F8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
