@@ -1,7 +1,5 @@
 ﻿namespace rec MdViewEngine
 
-open System
-
 type Undefined = exn
 
 type MdPiece =
@@ -13,6 +11,22 @@ type MdPiece =
 
 type MdPara = MdPara of MdPiece list
 
+type MdListItem =
+    | SubList of MdListItem list
+    | ListItem of MdPara
+
+type ListOrder =
+    interface
+    end
+
+type Ordered =
+    inherit ListOrder
+
+type Unordered =
+    inherit ListOrder
+
+type MdList<'ListOrder when 'ListOrder :> ListOrder> = MdList of MdListItem list
+
 type MdLine =
     | Heading1 of MdPara
     | Heading2 of MdPara
@@ -23,6 +37,8 @@ type MdLine =
     | Paragraph of MdPara
     | Blockquote of MdDocument
     | Code of string * string option
+    | OrderedList of MdList<Ordered>
+    | UnorderedList of MdList<Unordered>
 
 type MdDocument = MdDocument of MdLine list
 
@@ -55,22 +71,42 @@ module Md =
             )
         |> String.concat "\n"
 
+    let renderList mdList =
+        let listSign =
+            match box mdList with
+            | :? (MdList<Ordered>) -> "1."
+            | :? (MdList<Unordered>) -> "-"
+            | _ -> failwith ""
+
+        let (MdList list) = mdList
+
+        let renderListItem para indent =
+            sprintf "%s%s %s" indent listSign (renderPara para)
+
+        let rec renderRec (list: MdListItem list) depth: string list =
+            let listIndent = String.init depth (fun _ -> "    ")
+
+            list
+            |> List.collect (fun item ->
+                match item with
+                | SubList subList -> renderRec subList (depth + 1)
+                | ListItem para -> renderListItem para listIndent |> List.singleton)
+
+        renderRec list 0 |> String.concat "\n"
+
     let renderLine (line: MdLine) =
         match line with
-        | Heading1 para -> "# " + renderPara para
-        | Heading2 para -> "## " + renderPara para
-        | Heading3 para -> "### " + renderPara para
-        | Heading4 para -> "#### " + renderPara para
-        | Heading5 para -> "##### " + renderPara para
-        | Heading6 para -> "###### " + renderPara para
+        | Heading1 para -> sprintf "# %s" <| renderPara para
+        | Heading2 para -> sprintf "## %s" <| renderPara para
+        | Heading3 para -> sprintf "### %s" <| renderPara para
+        | Heading4 para -> sprintf "#### %s" <| renderPara para
+        | Heading5 para -> sprintf "##### %s" <| renderPara para
+        | Heading6 para -> sprintf "###### %s" <| renderPara para
         | Paragraph para -> renderPara para
         | Blockquote md -> renderBlockquote md 1
-        | Code (code, lang) ->
-            "```"
-            + (lang |> Option.defaultValue "")
-            + "\n"
-            + code
-            + "\n```"
+        | Code (code, lang) -> sprintf "```%s\n%s\n```" (lang |> Option.defaultValue "") code
+        | OrderedList list -> renderList list
+        | UnorderedList list -> renderList list
 
     let render (MdDocument md): string =
         md |> List.map renderLine |> String.concat "\n\n"

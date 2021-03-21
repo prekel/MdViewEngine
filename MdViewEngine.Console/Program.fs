@@ -5,6 +5,26 @@ let main argv =
     let md =
         MdDocument [ yield Heading1 <| MdPara [ Regular "qwe" ]
                      yield
+                         OrderedList
+                         <| MdList [ ListItem <| MdPara [ Regular "qwe1" ]
+                                     ListItem <| MdPara [ Regular "qwe2" ]
+                                     ListItem <| MdPara [ Regular "qwe3" ]
+                                     SubList [ ListItem <| MdPara [ Regular "asd1" ]
+                                               ListItem <| MdPara [ Regular "asd2" ] ]
+                                     ListItem <| MdPara [ Regular "zxc1" ]
+                                     ListItem <| MdPara [ Regular "sadsafsd" ] ]
+
+                     yield
+                         UnorderedList
+                         <| MdList [ ListItem <| MdPara [ Regular "qwe1 "
+                                                          BoldItalic "asdsa" ]
+                                     ListItem <| MdPara [ Regular "qwe2" ]
+                                     ListItem <| MdPara [ Regular "qwe3" ]
+                                     SubList [ ListItem <| MdPara [ Regular "asd1" ]
+                                               ListItem <| MdPara [ Regular "asd2" ] ]
+                                     ListItem <| MdPara [ Regular "zxc1" ]
+                                     ListItem <| MdPara [ Regular "sadsafsd" ] ]
+                     yield
                          Paragraph
                          <| MdPara [ Regular "Ghbdtn "
                                      Bold "asdas" ]
