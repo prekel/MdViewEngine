@@ -95,9 +95,11 @@ module Md =
                         |> List.collect (fun x ->
                             (renderLine x: string).Split '\n'
                             |> Array.map (fun line -> sprintf "%s    %s" <|| (listIndent, line))
-                            |> Array.toList)))
+                            |> Array.toList)
+                        |> String.concat "\n"
+                        |> List.singleton))
 
-        renderListRec list 0 |> String.concat "\n"
+        renderListRec list 0 |> String.concat "\n\n"
 
     let renderCode (MdCode (code, lang)) =
         sprintf "```%s\n%s\n```" (lang |> Option.defaultValue "") code
