@@ -1,5 +1,7 @@
 ﻿namespace rec MdViewEngine
 
+type Undefined = exn
+
 type MdPiece =
     | Regular of string
     | Italic of string
@@ -10,22 +12,21 @@ type MdPiece =
 type MdPara = MdPara of MdPiece list
 
 type MdListItem =
-    | SubList of MdListItem list
-    | ListItem of MdPara
+    | ListPara of MdPara
+    | ListItem of MdPara * MdLine list
+    | SubList of MdList
 
 type ListOrder =
-    interface
-    end
+    | Ordered
+    | Unordered
 
-type Ordered =
-    inherit ListOrder
-
-type Unordered =
-    inherit ListOrder
-
-type MdList<'ListOrder when 'ListOrder :> ListOrder> = MdList of MdListItem list
+type MdList = MdList of ListOrder * MdListItem list
 
 type MdBlockquote = MdBlockquote of MdLine list
+
+type MdCode = MdCode of string * string option
+
+type MdImage = MdImage of Undefined
 
 type MdLine =
     | Heading1 of MdPara
@@ -36,9 +37,9 @@ type MdLine =
     | Heading6 of MdPara
     | Paragraph of MdPara
     | Blockquote of MdBlockquote
-    | Code of string * string option
-    | OrderedList of MdList<Ordered>
-    | UnorderedList of MdList<Unordered>
+    | Code of MdCode
+    | List of MdList
+    | Image of MdImage
 
 type MdDocument = MdDocument of MdLine list
 
@@ -72,27 +73,34 @@ module Md =
         renderBlockquoteRec md 1
 
     let renderList list =
-        let listSign =
-            match box list with
-            | :? (MdList<Ordered>) -> "1."
-            | :? (MdList<Unordered>) -> "-"
-            | _ -> failwith "(ノ•̀ o •́ )ノ ~ ┻━┻"
+        let rec renderListRec (MdList (order, list)) depth =
+            let listSign =
+                match order with
+                | Ordered -> "1."
+                | Unordered -> "-"
 
-        let (MdList list) = list
+            let renderListPara para indent =
+                sprintf "%s%s %s" indent listSign (renderPara para)
 
-        let renderListPara para indent =
-            sprintf "%s%s %s" indent listSign (renderPara para)
-
-        let rec renderListRec list depth =
             let listIndent = String.init depth (fun _ -> "    ")
 
             list
             |> List.collect (fun item ->
                 match item with
                 | SubList subList -> renderListRec subList (depth + 1)
-                | ListItem para -> renderListPara para listIndent |> List.singleton)
+                | ListPara para -> renderListPara para listIndent |> List.singleton
+                | ListItem (para, lines) ->
+                    renderListPara para listIndent
+                    :: (lines
+                        |> List.collect (fun x ->
+                            (renderLine x: string).Split '\n'
+                            |> Array.map (fun line -> sprintf "%s    %s" <|| (listIndent, line))
+                            |> Array.toList)))
 
         renderListRec list 0 |> String.concat "\n"
+
+    let renderCode (MdCode (code, lang)) =
+        sprintf "```%s\n%s\n```" (lang |> Option.defaultValue "") code
 
     let renderLine line =
         match line with
@@ -104,9 +112,9 @@ module Md =
         | Heading6 para -> sprintf "###### %s" <| renderPara para
         | Paragraph para -> renderPara para
         | Blockquote md -> renderBlockquote md
-        | Code (code, lang) -> sprintf "```%s\n%s\n```" (lang |> Option.defaultValue "") code
-        | OrderedList list -> renderList list
-        | UnorderedList list -> renderList list
+        | Code code -> renderCode code
+        | List list -> renderList list
+        | Image _ -> failwith "todo"
 
     let render (MdDocument md) =
         md |> List.map renderLine |> String.concat "\n\n"
