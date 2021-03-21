@@ -1,4 +1,5 @@
-﻿open MdViewEngine
+﻿open System.IO
+open MdViewEngine
 
 [<EntryPoint>]
 let main argv =
@@ -88,5 +89,14 @@ let main argv =
 
     printfn "%A" <| md
     printfn "%s" <| Md.render md
+
+    let sw =
+        new StreamWriter(__SOURCE_DIRECTORY__
+                             .Replace("/MdViewEngine.Console", "/")
+                         + "README.md")
+
+    fprintf sw "%s" <| Md.render md
+
+    sw.Close()
 
     0
