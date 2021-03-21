@@ -1,7 +1,5 @@
 ﻿namespace rec MdViewEngine
 
-type Undefined = exn
-
 type MdPiece =
     | Regular of string
     | Italic of string
@@ -27,6 +25,8 @@ type Unordered =
 
 type MdList<'ListOrder when 'ListOrder :> ListOrder> = MdList of MdListItem list
 
+type MdBlockquote = MdBlockquote of MdLine list
+
 type MdLine =
     | Heading1 of MdPara
     | Heading2 of MdPara
@@ -35,7 +35,7 @@ type MdLine =
     | Heading5 of MdPara
     | Heading6 of MdPara
     | Paragraph of MdPara
-    | Blockquote of MdDocument
+    | Blockquote of MdBlockquote
     | Code of string * string option
     | OrderedList of MdList<Ordered>
     | UnorderedList of MdList<Unordered>
@@ -54,47 +54,47 @@ module Md =
     let renderPara (MdPara para) =
         para |> List.map renderPiece |> String.concat ""
 
-    let rec renderBlockquote (MdDocument md) depth =
-        md
-        |> List.map (fun line ->
-            match line with
-            | Blockquote q -> renderBlockquote q (depth + 1)
-            | x ->
-                let r: string = renderLine x
-                let lines: string [] = r.Split '\n'
-                let quoteSigns = String.init depth (fun _ -> ">")
+    let renderBlockquote md =
+        let rec renderBlockquoteRec (MdBlockquote md) depth =
+            let quoteSigns = String.init depth (fun _ -> ">")
+            let delimiter = sprintf "\n%s\n" quoteSigns
 
-                lines
-                |> Array.map (fun line -> sprintf "%s %s" <|| (quoteSigns, line))
-                |> String.concat "\n"
+            md
+            |> List.map (fun line ->
+                match line with
+                | Blockquote q -> renderBlockquoteRec q (depth + 1)
+                | x ->
+                    (renderLine x: string).Split '\n'
+                    |> Array.map (fun line -> sprintf "%s %s" <|| (quoteSigns, line))
+                    |> String.concat "\n")
+            |> String.concat delimiter
 
-            )
-        |> String.concat "\n"
+        renderBlockquoteRec md 1
 
-    let renderList mdList =
+    let renderList list =
         let listSign =
-            match box mdList with
+            match box list with
             | :? (MdList<Ordered>) -> "1."
             | :? (MdList<Unordered>) -> "-"
-            | _ -> failwith ""
+            | _ -> failwith "(ノ•̀ o •́ )ノ ~ ┻━┻"
 
-        let (MdList list) = mdList
+        let (MdList list) = list
 
-        let renderListItem para indent =
+        let renderListPara para indent =
             sprintf "%s%s %s" indent listSign (renderPara para)
 
-        let rec renderRec (list: MdListItem list) depth: string list =
+        let rec renderListRec list depth =
             let listIndent = String.init depth (fun _ -> "    ")
 
             list
             |> List.collect (fun item ->
                 match item with
-                | SubList subList -> renderRec subList (depth + 1)
-                | ListItem para -> renderListItem para listIndent |> List.singleton)
+                | SubList subList -> renderListRec subList (depth + 1)
+                | ListItem para -> renderListPara para listIndent |> List.singleton)
 
-        renderRec list 0 |> String.concat "\n"
+        renderListRec list 0 |> String.concat "\n"
 
-    let renderLine (line: MdLine) =
+    let renderLine line =
         match line with
         | Heading1 para -> sprintf "# %s" <| renderPara para
         | Heading2 para -> sprintf "## %s" <| renderPara para
@@ -103,10 +103,10 @@ module Md =
         | Heading5 para -> sprintf "##### %s" <| renderPara para
         | Heading6 para -> sprintf "###### %s" <| renderPara para
         | Paragraph para -> renderPara para
-        | Blockquote md -> renderBlockquote md 1
+        | Blockquote md -> renderBlockquote md
         | Code (code, lang) -> sprintf "```%s\n%s\n```" (lang |> Option.defaultValue "") code
         | OrderedList list -> renderList list
         | UnorderedList list -> renderList list
 
-    let render (MdDocument md): string =
+    let render (MdDocument md) =
         md |> List.map renderLine |> String.concat "\n\n"
